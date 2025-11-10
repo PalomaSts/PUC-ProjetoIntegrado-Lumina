@@ -59,7 +59,6 @@ export class AuthService {
     };
   }
 
-  // --- novo: registro local
   async registerLocal(data: { name: string; email: string; password: string }) {
     const { name, email, password } = data;
     const existing = await this.prisma.user.findUnique({ where: { email } });
@@ -82,7 +81,6 @@ export class AuthService {
     }
   }
 
-  // --- novo: validação local (login)
   async validateLocal(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -95,12 +93,10 @@ export class AuthService {
     return user;
   }
 
-  // --- novo: alteração de credenciais (trocar senha)
   async changePassword(userId: string, currentPassword: string | undefined, newPassword: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('Usuário não encontrado');
 
-    // se currentPassword fornecido, valida; se não (admin flow) você pode permitir
     if (currentPassword) {
       const ok = await bcrypt.compare(currentPassword, user.password);
       if (!ok) throw new UnauthorizedException('Senha atual inválida');
@@ -114,7 +110,6 @@ export class AuthService {
     return updated;
   }
 
-  // função que existia (ajustada nome) para registro via OAuth
   async registerUserFromOAuth(user: any) {
     try {
       const { name, emails, photos } = user;
@@ -122,7 +117,6 @@ export class AuthService {
       const picture = photos.length > 0 ? photos[0].value : '';
       const fullName = name.givenName + ' ' + name.familyName;
 
-      // gerar senha aleatória curta pra preencher campo (não usada)
       const randomPassword = Math.random().toString(36).slice(-12);
       const hashed = await bcrypt.hash(randomPassword, 10);
 

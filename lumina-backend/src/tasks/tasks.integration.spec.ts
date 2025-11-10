@@ -70,8 +70,6 @@ describe('Tasks - Integration', () => {
     if (app) await app.close();
   });
 
-  // --- Testes Funcionais ---
-
   it('deve criar uma nova tarefa para o projeto', async () => {
     const response = await request(server)
       .post('/tasks')

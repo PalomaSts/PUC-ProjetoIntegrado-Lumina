@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { GoogleStrategy } from './google.strategy';
-import { SessionAuthGuard } from './session-auth.guard'; // ajustar caminho se necessário
+import { SessionAuthGuard } from './session-auth.guard';
 
 @Module({
   imports: [
@@ -22,7 +22,7 @@ import { SessionAuthGuard } from './session-auth.guard'; // ajustar caminho se n
     PrismaService,
     AuthService,
     JwtService,
-    SessionAuthGuard, // exposto como provider para uso em UseGuards
+    SessionAuthGuard,
   ],
   exports: [AuthService],
 })

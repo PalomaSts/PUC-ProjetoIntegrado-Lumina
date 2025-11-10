@@ -42,7 +42,6 @@ export class ProjectsController {
       throw new BadRequestException('Dados inválidos para criação de projeto');
     }
 
-    // garante que o projeto seja sempre criado ligado ao usuário da sessão
     newProject.userId = userId;
 
     return await this.projectsService.create(newProject);

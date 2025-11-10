@@ -22,7 +22,6 @@ export class AuthController {
     private authService: AuthService,
   ) {}
 
-  // --- OAuth routes (mantidas)
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {}
@@ -32,8 +31,7 @@ export class AuthController {
   async googleAuthRedirect(@Req() req: any, @Res() res: Response) {
     const { token, user } = await this.authService.signIn(req.user);
 
-    // Garante que user.id exista e salva direto o objeto plano (sem aninhamento)
-    const sessionUser = {
+    const _sessionUser = {
       id: user?.id,
       email: user?.email,
       name: user?.name,
@@ -49,7 +47,6 @@ export class AuthController {
     return res.json(user);
   }
 
-  // --- já existente getMe (mantenha a versão com fallback token)
   @Get('me')
   async getMe(@Req() req: any) {
     if (req.session?.user) return req.session.user;
@@ -62,7 +59,6 @@ export class AuthController {
         if (userId) {
           const user = await this.prisma.user.findUnique({ where: { id: userId } });
           if (user && req.session) {
-            // ✅ não reatribuir req.session
             Object.assign(req.session, { user });
             req.session.save?.(() => {});
           }
@@ -75,9 +71,6 @@ export class AuthController {
     return null;
   }
 
-  // -----------------------
-  // Local register
-  // -----------------------
   @Post('register')
   async registerLocal(
     @Body() body: { name: string; email: string; password: string },
@@ -96,13 +89,9 @@ export class AuthController {
       secure: false,
       path: '/',
     });
-    // (mantido como estava; aqui você não usa req, então não mexe em sessão)
     return res.status(201).json(user);
   }
-
-  // -----------------------
-  // Local login
-  // -----------------------
+-
   @Post('login')
   async loginLocal(
     @Body() body: { email: string; password: string },
@@ -124,7 +113,6 @@ export class AuthController {
       path: '/',
     });
 
-    // ✅ garantir que o objeto original da sessão é preservado e salvo antes do json
     if (req && req?.session) {
       Object.assign(req.session, { user });
       await new Promise<void>((resolve) => req.session.save(() => resolve()));
@@ -133,18 +121,13 @@ export class AuthController {
     return res.json({ token, user });
   }
 
-  // -----------------------
-  // Update credentials (ex.: change password)
-  // -----------------------
   @Patch('update')
   async updateCredentials(
     @Req() req: any,
     @Body() body: { currentPassword?: string; newPassword?: string },
   ) {
-    // ensure authenticated
     const sessionUser = req.session?.user;
     let userId = sessionUser?.id;
-    // fallback to token
     if (!userId) {
       const token = req.cookies?.token || req.headers?.authorization?.split?.(' ')[1];
       if (!token) throw new UnauthorizedException('Not authenticated');
@@ -162,7 +145,6 @@ export class AuthController {
       body.newPassword,
     );
 
-    // refresh token (optional)
     const newToken = this.authService.generateJwt({
       id: updated.id,
       sub: updated.id,
@@ -170,7 +152,6 @@ export class AuthController {
       name: updated.name,
     });
 
-    // set updated cookie (mantido)
     (req.res as Response).cookie('token', newToken, {
       sameSite: 'lax',
       httpOnly: true,
@@ -178,7 +159,6 @@ export class AuthController {
       path: '/',
     });
 
-    // ✅ atualizar sessão sem reatribuir e salvar
     if (req.session) {
       Object.assign(req.session, { user: updated });
       req.session.save?.(() => {});

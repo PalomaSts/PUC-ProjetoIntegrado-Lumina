@@ -11,7 +11,7 @@ describe('ProjectsService', () => {
         ProjectsService,
         {
           provide: PrismaService,
-          useValue: {}, // Mock vazio para o Prisma
+          useValue: {},
         },
       ],
     }).compile();

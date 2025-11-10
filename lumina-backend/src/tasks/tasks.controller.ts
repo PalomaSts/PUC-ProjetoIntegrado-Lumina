@@ -28,7 +28,6 @@ export class TasksController {
       throw new UnauthorizedException('Usuário não autenticado');
     }
 
-    // validação rápida opcional
     if (!data || !data.title) {
       throw new BadRequestException('Dados inválidos para criação de task');
     }

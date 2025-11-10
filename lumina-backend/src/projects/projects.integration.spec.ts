@@ -84,7 +84,6 @@ describe('Projects - Integration (sem wipe)', () => {
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
     expect(response.body.length).toBeGreaterThan(0);
-    // opcional: conferir se o projeto criado está na lista
     const hasCreated = response.body.some((p: any) => p.id === createdProjectId);
     expect(hasCreated).toBe(true);
   });
