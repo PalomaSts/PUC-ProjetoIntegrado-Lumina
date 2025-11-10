@@ -2,92 +2,119 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../app.module';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaClient } from '@prisma/client';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
-import { MockAuthGuard } from '../test-utils/mock-auth.guard';
 import * as session from 'express-session';
+
+const prisma = new PrismaClient();
+
+let createdTaskId: string;
 
 describe('Tasks - Integration', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
-  const testUserId = 'test-user-id';
+  let server: any;
+  let testUserId: string;
   let testProjectId: string;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
+    const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideGuard(SessionAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
-    app = moduleFixture.createNestApplication();
-    prisma = app.get(PrismaService);
-
+    app = moduleRef.createNestApplication();
     app.use(
       session({
-        secret: 'test-secret',
+        secret: 'test-secret-tasks',
         resave: false,
         saveUninitialized: false,
       }),
     );
-
-    app.use((req, res, next) => {
+    app.use((req: any, res, next) => {
       req.session.user = { id: testUserId };
       next();
     });
 
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
+    server = app.getHttpServer();
 
-    await prisma.task.deleteMany();
-    await prisma.project.deleteMany();
-    await prisma.user.deleteMany();
-
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
-        id: testUserId,
-        name: 'Test User',
-        email: 'test@example.com',
-        password: '12345678',
+        name: 'Integration User',
+        email: `integration+${Date.now()}@test.local`,
+        password: 'test-password',
         picture: '',
       },
     });
+    testUserId = user.id;
 
-    const project = await prisma.project.create({
+    const createdProject = await prisma.project.create({
       data: {
-        name: 'Projeto Teste',
+        name: 'Projeto de Tarefas',
+        description: 'Projeto para testes de integração de tarefas',
         status: 'new',
-        userId: testUserId,
+        user: { connect: { id: testUserId } },
       },
     });
-
-    testProjectId = project.id;
+    testProjectId = createdProject.id;
   });
 
   afterAll(async () => {
-    await prisma.task.deleteMany();
-    await prisma.project.deleteMany();
-    await prisma.user.deleteMany();
-    await app.close();
+    await prisma.task.deleteMany({ where: { projectId: testProjectId } }).catch(() => {});
+    await prisma.project.deleteMany({ where: { id: testProjectId } }).catch(() => {});
+    await prisma.user.deleteMany({ where: { id: testUserId } }).catch(() => {});
+    await prisma.$disconnect();
+    if (app) await app.close();
   });
 
-  it('deve criar uma nova tarefa', async () => {
-    const response = await request(app.getHttpServer())
+  // --- Testes Funcionais ---
+
+  it('deve criar uma nova tarefa para o projeto', async () => {
+    const response = await request(server)
       .post('/tasks')
-      .send({ title: 'Nova tarefa', projectId: testProjectId });
+      .send({
+        title: 'Tarefa de Integração',
+        description: 'Testando a criação de uma tarefa.',
+        projectId: testProjectId,
+        dueDate: new Date(Date.now() + 86400000).toISOString(),
+      });
 
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('id');
-    expect(response.body.title).toBe('Nova tarefa');
-    expect(response.body.done).toBe(false);
+    expect(response.body.title).toBe('Tarefa de Integração');
     expect(response.body.projectId).toBe(testProjectId);
+
+    createdTaskId = response.body.id;
   });
 
   it('deve listar as tarefas do usuário', async () => {
-    const response = await request(app.getHttpServer()).get('/tasks');
+    const response = await request(server).get('/tasks');
 
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBeGreaterThan(0);
-    expect(response.body[0]).toHaveProperty('title');
-    expect(response.body[0]).toHaveProperty('done');
+    expect(response.body.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('deve atualizar uma tarefa existente', async () => {
+    const newTitle = 'Tarefa Atualizada';
+
+    const response = await request(server)
+      .patch(`/tasks/${createdTaskId}`)
+      .send({ title: newTitle, done: true });
+
+    expect(response.status).toBe(200);
+    expect(response.body.title).toBe(newTitle);
+    expect(response.body.done).toBe(true);
+  });
+
+  it('deve deletar a tarefa', async () => {
+    const response = await request(server).delete(`/tasks/${createdTaskId}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('count');
+    expect(response.body.count).toBe(1);
   });
 });

@@ -6,7 +6,7 @@ export function Root() {
 
   return (
     <Stack>
-      <Typography variant="h6">This is React template for MUI and TypeScript.</Typography>
+      <Typography variant="h6">Lumina</Typography>
     </Stack>
   );
 }

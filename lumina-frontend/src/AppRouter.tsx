@@ -9,9 +9,13 @@ import { ProjectList } from "./pages/ProjectList";
 import { TaskDetail } from "./pages/TaskDetail";
 import { TaskList } from "./pages/TaskList";
 import { Root } from "./pages/Welcome";
+import Register from "./pages/Register";
+import Profile from "./pages/Profile";
+import Login from "./pages/Login";
 
 export type RouterPaths =
   | "/home"
+  | "/login"
   | "/projects/:id"
   | "/projects/new"
   | "/projects"
@@ -19,6 +23,7 @@ export type RouterPaths =
   | "/tasks/new"
   | "/tasks/:id"
   | "/profile"
+  | "/register"
   | "/"
   | "/google/callback"
   | "/new"
@@ -46,6 +51,25 @@ export const AppRouterConfig: { [key: string]: AppRouterConfigMatch } = {
     element: <Root />,
     title: "Welcome!",
     public: true,
+  },
+  Register: {
+    path: "/register",
+    element: <Register />,
+    title: "Register",
+    public: true,
+  },
+  Profile: {
+    path: "/profile",
+    element: <Profile />,
+    title: "Profile",
+    public: false,
+    showBackBtn: true,
+  },
+  Login: {
+    path: "/login",
+    element: <Login />,
+    public: true,
+    title: "Login",
   },
   ProjectList: {
     path: "/projects",
@@ -127,7 +151,7 @@ export function useRouteMatch() {
   const [match, setMatch] = useState<AppRouterConfigMatch>(currRoute);
   useEffect(() => {
     setMatch(currRoute);
-  }, [location]);
+  }, [location, currRoute]);
 
   return match;
 }
@@ -179,7 +203,7 @@ function RoutesMapper() {
   return (
     <Routes>
       {Object.values(AppRouterConfig)
-        .filter((x) => x.path != "/")
+        .filter((x) => x.path !== "/")
         .map((route, i) => mapRoute(route, String(i)))}
       <Route path="*" element={<Navigate replace to="/home" />} />
     </Routes>

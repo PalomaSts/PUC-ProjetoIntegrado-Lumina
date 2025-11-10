@@ -10,7 +10,7 @@ import { AppModule } from './../src/app.module';
 import { AuthGuard } from '@nestjs/passport';
 
 class MockAuthGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
+  canActivate(_context: ExecutionContext): boolean {
     throw new UnauthorizedException();
   }
 }

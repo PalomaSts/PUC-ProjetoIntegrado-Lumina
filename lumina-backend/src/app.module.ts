@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { AuthService } from './auth/auth.service';
 import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
+import { WinstonModule } from 'nest-winston';
+import { winstonConfig } from './logger/winston.config';
 
 @Module({
   imports: [
@@ -14,6 +16,7 @@ import { TasksModule } from './tasks/tasks.module';
     AuthModule,
     ProjectsModule,
     TasksModule,
+    WinstonModule.forRoot(winstonConfig),
   ],
   controllers: [AppController],
   providers: [AppService, JwtService, AuthService],

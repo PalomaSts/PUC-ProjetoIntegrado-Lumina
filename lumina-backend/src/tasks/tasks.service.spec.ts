@@ -1,14 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TasksService } from './tasks.service';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 const mockPrismaService = {
   task: {
-    create: jest.fn(),
+    findUnique: jest.fn(),
     findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
     findFirst: jest.fn(),
     updateMany: jest.fn(),
     deleteMany: jest.fn(),
+  },
+  project: {
+    findUnique: jest.fn(),
   },
 };
 
@@ -18,10 +24,7 @@ describe('TasksService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        TasksService,
-        { provide: PrismaService, useValue: mockPrismaService },
-      ],
+      providers: [TasksService, { provide: PrismaService, useValue: mockPrismaService }],
     }).compile();
 
     service = module.get<TasksService>(TasksService);
@@ -38,25 +41,46 @@ describe('TasksService', () => {
 
   describe('create', () => {
     it('should create a task', async () => {
-      const mockTask = { id: '1', title: 'Test Task', done: false };
+      const mockTask = {
+        id: '1',
+        title: 'Test Task',
+        description: '',
+        status: 'new',
+        priority: 'medium',
+        createdAt: new Date(),
+        dueDate: new Date(),
+        userId: 'test-user-id',
+        projectId: null,
+        done: false,
+      };
       prisma.task.create.mockResolvedValue(mockTask);
 
-      const result = await service.create('user-id', 'Test Task', 'project-id');
+      const payload: any = {
+        title: 'Test Task',
+        description: '',
+        status: 'new',
+        priority: 'medium',
+        createdAt: new Date(),
+        dueDate: new Date(),
+      };
+
+      const result = await service.create('test-user-id', payload);
 
       expect(prisma.task.create).toHaveBeenCalledWith({
         data: {
-          title: 'Test Task',
-          userId: 'user-id',
-          projectId: 'project-id',
+          ...payload,
+          userId: 'test-user-id',
         },
       });
+
       expect(result).toEqual(mockTask);
+      expect(result.title).toBe('Test Task');
     });
   });
 
   describe('findAll', () => {
     it('should return an array of tasks', async () => {
-      const mockTasks = [{ id: '1', title: 'Test Task', done: false }];
+      const mockTasks: any[] = [{ id: '1', title: 'Test Task', done: false }];
       prisma.task.findMany.mockResolvedValue(mockTasks);
 
       const result = await service.findAll('user-id');
@@ -72,29 +96,30 @@ describe('TasksService', () => {
 
   describe('update', () => {
     it('should update a task', async () => {
-      prisma.task.findFirst.mockResolvedValue({
+      const updatedTask = {
         id: '1',
-        title: 'Test Task',
-        done: false,
+        title: 'Updated Task',
+        done: true,
         userId: 'user-id',
         projectId: null,
         createdAt: new Date(),
-      });
+      };
 
       prisma.task.updateMany.mockResolvedValue({ count: 1 });
+      prisma.task.findFirst.mockResolvedValue(updatedTask);
 
-      const result = await service.update('user-id', '1', { done: true });
+      const result = await service.update('user-id', '1', { done: true, title: 'Updated Task' });
+
+      expect(prisma.task.updateMany).toHaveBeenCalledWith({
+        where: { id: '1', userId: 'user-id' },
+        data: { done: true, title: 'Updated Task' },
+      });
 
       expect(prisma.task.findFirst).toHaveBeenCalledWith({
         where: { id: '1', userId: 'user-id' },
       });
 
-      expect(prisma.task.updateMany).toHaveBeenCalledWith({
-        where: { id: '1', userId: 'user-id' },
-        data: { done: true },
-      });
-
-      expect(result).toBeDefined();
+      expect(result).toEqual(updatedTask);
     });
   });
 
@@ -105,9 +130,9 @@ describe('TasksService', () => {
       const result = await service.remove('user-id', '1');
 
       expect(prisma.task.deleteMany).toHaveBeenCalledWith({
-        where: { id: '1', userId: 'user-id' }, // ✅ corrigido
+        where: { id: '1', userId: 'user-id' },
       });
-      expect(result).toBeUndefined();
+      expect(result).toEqual({ count: 1 });
     });
   });
 });

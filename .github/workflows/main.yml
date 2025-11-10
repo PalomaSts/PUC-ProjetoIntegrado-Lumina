@@ -21,13 +21,17 @@ jobs:
         with:
           node-version: 20
 
-      - name: Instalar dependências (backend)
+      - name: Instalar dependências
         run: npm ci
         working-directory: ./lumina-backend
 
-      - name: Instalar dependências (frontend)
-        run: npm ci
-        working-directory: ./lumina-frontend
+      - name: Rodar Linting (Qualidade de Código)
+        run: npm run lint
+        working-directory: ./lumina-backend
+
+      - name: Rodar Build (Verificação de Compilação e Tipagem)
+        run: npm run build
+        working-directory: ./lumina-backend
 
       - name: Gerar Prisma Client
         run: npx prisma generate

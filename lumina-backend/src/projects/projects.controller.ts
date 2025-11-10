@@ -8,6 +8,9 @@ import {
   Post,
   Req,
   UseGuards,
+  UnauthorizedException,
+  BadRequestException,
+  HttpCode,
 } from '@nestjs/common';
 import { Project } from '@prisma/client';
 import { SessionAuthGuard } from '../auth/session-auth.guard';
@@ -19,24 +22,45 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Post()
-  async create(@Req() req) {
-    const newProject = req.body as Project;
-    try {
-      newProject.userId = req.session.user.id;
-      this.projectsService.create(newProject);
-    } catch (error) {
-      return {};
+  @HttpCode(201)
+  async create(@Req() req: any): Promise<Project> {
+    console.log('=== create project request ===', {
+      cookies: req.cookies,
+      session: req.session
+        ? { hasUser: Boolean(req.session.user), userId: req.session?.user?.id }
+        : null,
+      bodyPreview: { name: req.body?.name },
+    });
+
+    const userId = req.session?.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Usuário não autenticado');
     }
+
+    const newProject = req.body as Project;
+    if (!newProject || !newProject.name) {
+      throw new BadRequestException('Dados inválidos para criação de projeto');
+    }
+
+    // garante que o projeto seja sempre criado ligado ao usuário da sessão
+    newProject.userId = userId;
+
+    return await this.projectsService.create(newProject);
   }
 
   @Get()
-  async findAll(@Req() req) {
-    return this.projectsService.findAll(req.session.user.id);
+  async findAll(@Req() req: any) {
+    const userId = req.session?.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+
+    return this.projectsService.findAll(userId);
   }
 
   @Get(':id')
   async find(@Param('id') id: string, @Req() req) {
-    return this.projectsService.find(id);
+    return this.projectsService.find(req.session.user.id, id);
   }
 
   @Patch(':id')
@@ -47,13 +71,7 @@ export class ProjectsController {
     @Body('description') description: string,
     @Req() req,
   ) {
-    return this.projectsService.update(
-      req.session.user.id,
-      id,
-      name,
-      status,
-      description,
-    );
+    return this.projectsService.update(req.session.user.id, id, name, status, description);
   }
 
   @Delete(':id')

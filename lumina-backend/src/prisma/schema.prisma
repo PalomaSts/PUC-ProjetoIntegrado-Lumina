@@ -19,6 +19,7 @@ model User {
   name     String
   password String
   picture  String
+  createdAt DateTime @default(now())
   tasks    Task[]
   projects Project[]
 }

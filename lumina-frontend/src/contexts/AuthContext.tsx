@@ -37,6 +37,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     },
     signOutUser: () => {
       localStorage.removeItem("logged-in");
+      setUser(undefined);
     },
   };
 

@@ -8,6 +8,8 @@ import {
   Patch,
   Req,
   UseGuards,
+  UnauthorizedException,
+  BadRequestException,
   Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
@@ -20,18 +22,41 @@ export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Post()
-  async create(@Req() req, @Body() data: Prisma.TaskUncheckedCreateInput) {
-    return this.tasksService.create(req.session.user.id, data);
+  async create(@Req() req: any, @Body() data: Prisma.TaskUncheckedCreateInput) {
+    const userId = req.session?.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+
+    // validação rápida opcional
+    if (!data || !data.title) {
+      throw new BadRequestException('Dados inválidos para criação de task');
+    }
+
+    return this.tasksService.create(userId, data);
   }
 
   @Get()
   async findAll(
-    @Req() req,
+    @Req() req: any,
     @Query('projectId') projectId?: string,
     @Query('status') status?: string,
     @Query('priority') priority?: string,
   ) {
-    return this.tasksService.findAll(req.session.user.id, {
+    console.log('=== list tasks request ===', {
+      cookies: req.cookies,
+      session: req.session
+        ? { hasUser: Boolean(req.session.user), userId: req.session?.user?.id }
+        : null,
+      filters: { projectId, status, priority },
+    });
+
+    const userId = req.session?.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException('Usuário não autenticado');
+    }
+
+    return this.tasksService.findAll(userId, {
       projectId,
       status,
       priority,
@@ -44,11 +69,7 @@ export class TasksController {
   }
 
   @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() data: Prisma.TaskUncheckedUpdateInput,
-    @Req() req,
-  ) {
+  async update(@Param('id') id: string, @Body() data: Prisma.TaskUncheckedUpdateInput, @Req() req) {
     return this.tasksService.update(req.session.user.id, id, data);
   }
 
@@ -63,11 +84,7 @@ export class TasksController {
     @Param('projectId') projectId: string,
     @Req() req,
   ) {
-    return this.tasksService.assignToProject(
-      req.session.user.id,
-      taskId,
-      projectId,
-    );
+    return this.tasksService.assignToProject(req.session.user.id, taskId, projectId);
   }
 
   @Get('/project/:projectId')
@@ -76,13 +93,22 @@ export class TasksController {
     @Req() req,
     @Query('done') done: string,
   ) {
-    const doneFilter =
-      done === 'true' ? true : done === 'false' ? false : undefined;
+    const doneFilter = done === 'true' ? true : done === 'false' ? false : undefined;
 
-    return this.tasksService.findByProject(
-      req.session.user.id,
-      projectId,
-      doneFilter,
-    );
+    return this.tasksService.findByProject(req.session.user.id, projectId, doneFilter);
+  }
+
+  @Get('stats/last24h')
+  async getLast24h(@Req() req) {
+    const userId = req.session?.user?.id;
+    if (!userId) throw new UnauthorizedException('Usuário não autenticado');
+    return this.tasksService.countTasksLast24h(userId);
+  }
+
+  @Get('stats/completion')
+  async getCompletion(@Req() req) {
+    const userId = req.session?.user?.id;
+    if (!userId) throw new UnauthorizedException('Usuário não autenticado');
+    return this.tasksService.getCompletionStats(userId);
   }
 }

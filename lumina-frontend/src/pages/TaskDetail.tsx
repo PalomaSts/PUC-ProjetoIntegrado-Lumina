@@ -151,7 +151,7 @@ export function TaskDetail() {
             />
             {!state?.readonly && form.values.status !== 'cancelled' && (
               <Select
-                value={form.values.status}
+                value={form.values.status || ''}
                 onChange={(e) => {
                   if (e.target.value === 'cancelled') {
                     setShowCancelDialog(true);
@@ -162,6 +162,10 @@ export function TaskDetail() {
                 fullWidth
                 label="Status"
               >
+                <MenuItem value={form.values.status} disabled>
+                  {getReadableStatus(form.values.status)}
+                </MenuItem>
+
                 {getNextStatusOptions(form.values.status).map((opt) => (
                   <MenuItem key={opt} value={opt}>
                     {opt.charAt(0).toUpperCase() +

@@ -6,9 +6,37 @@
 # Logs
 *.log
 npm-debug.log*
+pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+
+# OS
+.DS_Store
+
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
@@ -60,6 +88,12 @@ web_modules/
 # Optional stylelint cache
 .stylelintcache
 
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
 # Optional REPL history
 .node_repl_history
 
@@ -70,10 +104,23 @@ web_modules/
 .yarn-integrity
 
 # dotenv environment variable files
-.env
-.env.*
-!.env.example
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
 
+# temp directory
+.temp
+.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
@@ -99,9 +146,6 @@ dist
 .temp
 .cache
 
-# Sveltekit cache directory
-.svelte-kit/
-
 # vitepress build output
 **/.vitepress/dist
 
@@ -120,24 +164,15 @@ dist
 # DynamoDB Local files
 .dynamodb/
 
-# Firebase cache directory
-.firebase/
-
 # TernJS port file
 .tern-port
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
-# yarn v3
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
 .pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-
-# Vite logs files
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
